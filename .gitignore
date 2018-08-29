@@ -12,6 +12,15 @@ starterkits/*.zip
 starterkits/*.xml
 starterkits/2541/*
 
+# Output
+predictions.csv
+
+# WordEmbeddings
+*.bin
+
+# Keras Models
+*.model
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

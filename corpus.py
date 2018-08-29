@@ -7,73 +7,63 @@ Class to manage VUAMC
 
 
 from collections import Counter, OrderedDict
-from sys import exit
-import argparse
-import csv
-import logging
-import numpy
+from csv import reader, DictReader
+from numpy import array as nparray
+from itertools import chain
 
 
-class Corpus():
+class VUAMC():
     """
-    Represent flpst files like:
+    Takes in the VUAMC CSV files and Token CSV training/test files
+    and represents them as Objects.
 
-    --- 8< --- vuamc_corpus_train.csv --- 8< ---
+    Example input files:
+    $ head vuamc_corpus_train.csv
     "txt_id","sentence_id","sentence_txt"
-"a1e-fragment01","1","Latest corporate unbundler M_reveals laid-back M_approach : Roland Franklin , who is M_leading a 697m pound break-up bid for DRG , talks M_to Frank Kane"
-"a1e-fragment01","2","By FRANK KANE"
-    ...
-    --- >8 ---
+    "a1e-fragment01","1","Latest corporate unbundler M_reveals laid-back M_approach : Roland Franklin , who is M_leading a 697m pound break-up bid for DRG , talks M_to Frank Kane"
 
-    --- 8< --- all_pos_tokens.csv --- 8< ---
-    a1h-fragment06_114_1,0
-    a1h-fragment06_114_3,0
-    a1h-fragment06_114_4,0
-    a1h-fragment06_115_2,0
-    a1h-fragment06_115_3,0
+    $ head all_pos_tokens_train_gold_labels.csv
     a1h-fragment06_116_1,0
     a1h-fragment06_116_2,0
     a1h-fragment06_116_5,1
-    --- >8 ---
 
-    and their 'test' counterparts without class labels (or 'M_'-information).
-
-    Parameters:
-        vuamc_fn: file name string
-        tokens_fn: file name string
-        mode: "train" will read labels from tokens_fn
+    :param string vuamc_file: Test/Train VUAMC file as csv
+    :param string tokens_file: Test/Train Tokens file as csv
+    :param string mode: "train" will read labels from tokens_file
+    :return: VUAMC Object
     """
 
-    def __init__(self, vuamc_fn, tokens_fn, mode="train", sanity_check=False):
+    def __init__(self, vuamc_file, tokens_file, mode='train'):
 
-        self.log = logging.getLogger(type(self).__name__)
-        self.vuamc_delimiter = self.tokens_delimiter = ","
-        self.vuamc_quotechar = self.tokens_quotechar = '"'
-
-        # set initial values for params
-        self.vuamc_fn = vuamc_fn
-        self.tokens_fn = tokens_fn
+        self.delimiter = ','
+        self.quotechar = '"'
         self.mode = mode
-
-        # load files
-        self.vuamc = self._load_vuamc(self.vuamc_fn)
-        self.tokens = self._load_tokens(self.tokens_fn)
-
-        if sanity_check:
-            self._sanity_check()
-
         self._sentences = None
+        self._token_list = None
+        self._label_list = None
+
+        self.vuamc_file = vuamc_file
+        self.tokens_file = tokens_file
+
+        self.vuamc = self._load_vuamc(self.vuamc_file)
+        self.tokens = self._load_tokens(self.tokens_file)
 
     def _load_vuamc(self, fn):
         """
+        Loads the VUAMC CSV file into an OrderedDict.
+
+        The final structure is:
         self.vuamc['a1h-fragment06']['134']['tokens'][23]
+
+        With the corresponding metaphor (0|1) labels:
         self.vuamc['a1h-fragment06']['134']['labels'][23]
         """
 
         data = OrderedDict()
+
         with open(fn) as csvfile:
-            csvreader = csv.DictReader(csvfile, delimiter=self.vuamc_delimiter,
-                                       quotechar=self.vuamc_quotechar)
+            csvreader = DictReader(csvfile, delimiter=self.delimiter, quotechar=self.quotechar)
+
             for row in csvreader:
                 txt_id = row['txt_id']
                 sentence_id = row['sentence_id']
@@ -83,15 +73,15 @@ class Corpus():
                     data[txt_id] = OrderedDict()
 
                 if txt_id in data and sentence_id in data[txt_id]:
-                    exit("Identical keys in line {}".format(csvreader.line_num))
+                    exit('Identical keys in line {}'.format(csvreader.line_num))
                 else:
                     data[txt_id][sentence_id] = OrderedDict()
 
                 tokens = OrderedDict()
                 labels = OrderedDict()
-                for token_id, token in enumerate(
-                        sentence_txt.strip().split(" ")):
-                    if token.startswith("M_"):
+
+                for token_id, token in enumerate(sentence_txt.strip().split(' ')):
+                    if token.startswith('M_'):
                         token = token[2:]
                         labels[token_id+1] = 1
                     else:
@@ -105,22 +95,24 @@ class Corpus():
 
     def _load_tokens(self, fn):
         """
+        Loads the training gold labels into an OrderedDict.
+        These are used to yield the (tokens,labels) for the sentences.
+
+        The final structure is:
         self.tokens['a1h-fragment06']['134'][23]
         """
 
         data = OrderedDict()
+
         with open(fn) as csvfile:
-            csvreader = csv.reader(csvfile, delimiter=self.tokens_delimiter,
-                                   quotechar=self.tokens_quotechar)
+            csvreader = reader(csvfile, delimiter=self.delimiter, quotechar=self.quotechar)
+
             for row in csvreader:
                 txt_id, sentence_id, token_id = row[0].split('_')
 
-                if self.mode == "train":
+                if self.mode == 'train':
+                    # TODO: I dont get this?
                     label = int(row[1])
-                    # ?FIXME:
-                    # here, we are using the additional information from the
-                    # filtered stop words. still, we are only using the test
-                    # partition so, all in all we should be on the safe side.
                     label = self.vuamc[txt_id][sentence_id]['labels'][int(token_id)]
                 else:
                     label = -1
@@ -131,118 +123,101 @@ class Corpus():
                 if sentence_id not in data[txt_id]:
                     data[txt_id][sentence_id] = OrderedDict()
 
-                if (txt_id in data and sentence_id in data[txt_id] and
-                        int(token_id) in data[txt_id][sentence_id]):
-                    exit("Identical keys in line {}".format(csvreader.line_num))
+                if (txt_id in data and
+                    sentence_id in data[txt_id] and
+                    int(token_id) in data[txt_id][sentence_id]):
+                    exit('Identical keys in line {}'.format(csvreader.line_num))
 
                 data[txt_id][sentence_id][int(token_id)] = label
 
             return data
 
-    def _sanity_check(self):
+    def validate_corpus(self):
         """
-        Check that the 'txt_id, sentence_id, token_id, class_label'-s from the
-        files:
-            - vuamc_corpus.csv
-            - ..._tokens.csv
-        match.
+        Check that the 'txt_id, sentence_id, token_id, class_label'-s from the csv files match.
         """
 
         for txt_id in self.tokens:
             for sentence_id in self.tokens[txt_id]:
                 for token_id in self.tokens[txt_id][sentence_id]:
-                    self.log.info(
-                        "%s %d %d", " ".join([str(x) for x in [txt_id,
-                                                               sentence_id,
-                                                               token_id]]),
-                        self.tokens[txt_id][sentence_id][token_id],
-                        self.vuamc[txt_id][sentence_id]['labels'][token_id])
-                    assert (self.tokens[txt_id][sentence_id][token_id] ==
-                            self.vuamc[txt_id][sentence_id]['labels'][token_id])
+                    if self.mode == 'train':
+                        assert(self.tokens[txt_id][sentence_id][token_id] ==
+                               self.vuamc[txt_id][sentence_id]['labels'][token_id])
+                    else:
+                        assert(self.vuamc[txt_id][sentence_id]['labels'][token_id] == 0)
 
-    def sentence(self, txt_id, sentence_id):
+    def sentence(self, text_id, sentence_id):
+        """
+        Returns a sentence as a list of tuples (token, label) with the label from the self.tokens.
+        """
+
         sentence = []
-        for token_id in self.vuamc[txt_id][sentence_id]['tokens'].keys():
-            if token_id in self.tokens[txt_id][sentence_id]:
-                label = self.tokens[txt_id][sentence_id][token_id]
+
+        for token_id in self.vuamc[text_id][sentence_id]['tokens'].keys():
+            if token_id in self.tokens[text_id][sentence_id]:
+                # Token is labeled as metaphor
+                label = self.tokens[text_id][sentence_id][token_id]
             else:
+                # Token not a metaphor
                 label = 0
-            sentence.append((self.vuamc[txt_id][sentence_id]['tokens'][token_id],
-                             label))
+
+            sentence.append((self.vuamc[text_id][sentence_id]['tokens'][token_id], label))
+
         return sentence
 
     @property
     def sentences(self):
-        """ Yield list (sentences) of tuples (word, label). """
+        """
+        Yields a list of all sentences, each sentence a list of tuples (word, label).
+
+        Example:
+        [('Such', 0), ('language', 0), ('focused', 1), ('attention', 0), ('on', 0), ('the', 0), ('individuals', 0)]
+        """
 
         def populate_sentences():
-            """ Helper to populate sentences. """
+            """
+            Helper to populate sentences.
+            """
 
-            for txt_id in self.tokens:
-                for sentence_id in self.tokens[txt_id]:
-                    yield self.sentence(txt_id, sentence_id)
+            for text_id in self.tokens:
+                for sentence_id in self.tokens[text_id]:
+                    yield self.sentence(text_id, sentence_id)
 
         if self._sentences is None:
             self._sentences = list(populate_sentences())
 
         return self._sentences
 
-    @staticmethod
-    def X_y_sentence(model, sentence, maxlen=None):
+    @property
+    def token_list(self):
+        """
+        Yields a list of all tokens
+        """
 
-        retval_X = []
-        retval_y = []
+        def populate_tokens():
 
-        # ..._pads: list of padded entried - multiple if len(toks) > max_len
-        sentence_toks_pads = Utils.pad_toks([tok[0] for tok in sentence],
-                                            maxlen=maxlen)
-        sentence_ys_pads = Utils.pad_toks([tok[1] for tok in sentence],
-                                          value=0, maxlen=maxlen)
+            for sentence in self.sentences:
+                yield [item[0] for item in sentence]
 
-        for tmp_id, sentence_toks_pad in enumerate(sentence_toks_pads):
-            sentence_retval = []
-            sentence_retval.extend(Utils.toks2feat(sentence_toks_pad, model))
-            retval_X.append(numpy.array(sentence_retval))
-            retval_y.append(numpy.array(sentence_ys_pads[tmp_id]))
+        if self._token_list is None:
+            # Flatten list of lists
+            self._token_list = list(chain(*list(populate_tokens())))
 
-        return retval_X, retval_y
+        return self._token_list
 
-    def X_y(self, model, sentence=None, maxlen=None):
+    @property
+    def label_list(self):
+        """
+        Yields a list of all labels
+        """
 
-        retval_X = []
-        retval_y = []
+        def populate_labels():
 
-        if sentence is None:
-            sentences = self.sentences
-        else:
-            sentences = [sentence]
+            for sentence in self.sentences:
+                yield [item[1] for item in sentence]
 
-        for sent in sentences:
-            X, y = Corpus.X_y_sentence(model, sent, maxlen=maxlen)
-            retval_X.extend(X)
-            retval_y.extend(y)
+        if self._label_list is None:
+            # Flatten list of lists
+            self._label_list = list(chain(*list(populate_labels())))
 
-        return retval_X, retval_y
-
-    def X(self, model):
-
-        X, _ = self.X_y(model)
-
-        return X
-
-    def y(self, model):
-
-        _, y = self.X_y(model)
-
-        return y
-
-    # def Xposs(self, maxlen=None):
-    #     retval = []
-    #     for sent in self.sentences:
-    #         poss = [tag[1] for tag in pos_tag([tok[0] for tok in sent])]
-    #         sentence_poss_pads = Utils.pad_toks(poss,
-    #                                             value=0,
-    #                                             maxlen=maxlen)
-    #         for tmp_id, sentence_poss_pad in enumerate(sentence_poss_pads):
-    #             retval.append(Utils.poss2feat(sentence_poss_pad))
-    #     return numpy.array(retval)
+        return self._label_list
