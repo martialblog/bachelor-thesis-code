@@ -34,7 +34,7 @@ label_predictions = kerasbackend.eval(binary_predictions)
 
 
 # Write prediction to CSV file
-predictions_file = 'predictions_foo.csv'
+predictions_file = 'predictions.csv'
 standard_file = 'source/verb_tokens_test_gold_labels.csv'
 
 rows = evaluate.corpus_evaluation(c_test, label_predictions, MAX_SENTENCE_LENGTH)
