@@ -14,7 +14,7 @@ from keras import backend as kerasbackend
 
 # Global configuration
 # TODO: Test with longer sentences
-MAX_SENTENCE_LENGTH = 20
+MAX_SENTENCE_LENGTH = 50
 EMBEDDING_DIM = 300
 
 KERAS_OPTIMIZER = 'rmsprop'
@@ -74,8 +74,7 @@ print('loss_weight 1 : {}'.format(loss_weight))
 
 # Create and compile model
 inputs = Input(shape=(MAX_SENTENCE_LENGTH, EMBEDDING_DIM))
-# TODO: Use different Mask Value for paddings, -1
-model = Masking(mask_value=[0] * EMBEDDING_DIM)(inputs)
+model = Masking(mask_value=[-1] * EMBEDDING_DIM)(inputs)
 model = Bidirectional(LSTM(100, return_sequences=True, dropout=0, recurrent_dropout=0.25))(model)
 outputs = TimeDistributed(Dense(2, activation='softmax'))(model)
 model = Model(inputs=inputs, outputs=outputs)

@@ -89,7 +89,7 @@ class Word2Vec(Embeddings):
         return return_list
 
 
-def add_padding(tokens, max_len=20, pad_value='__PADDING__', split_if_too_long=True):
+def add_padding(tokens, max_len=50, pad_value='__PADDING__', split_if_too_long=True):
     """
     Pad a list of toks with value to maxlen length.
 
@@ -110,7 +110,7 @@ def add_padding(tokens, max_len=20, pad_value='__PADDING__', split_if_too_long=T
         return tokens
 
 
-def compile_input_and_labels_for_sentence(sentence, Vectors, max_len=20):
+def compile_input_and_labels_for_sentence(sentence, Vectors, max_len=50):
     """
     Adds padding to the sentence tokens and labels
     """
@@ -120,7 +120,7 @@ def compile_input_and_labels_for_sentence(sentence, Vectors, max_len=20):
 
     # Unpack tuples and pad the sequence to a fixed length
     padded_sentence_tokens = add_padding([token[0] for token in sentence], max_len=max_len)
-    padded_sentence_labels = add_padding([token[1] for token in sentence], pad_value=0, max_len=max_len)
+    padded_sentence_labels = add_padding([token[1] for token in sentence], pad_value=-1, max_len=max_len)
 
     x_inputs = Vectors.embeddings(padded_sentence_tokens)
     y_labels = padded_sentence_labels
@@ -128,7 +128,7 @@ def compile_input_and_labels_for_sentence(sentence, Vectors, max_len=20):
     return x_inputs, y_labels
 
 
-def generate_input_and_labels(sentences, Vectors, max_len=20):
+def generate_input_and_labels(sentences, Vectors, max_len=50):
     """
     Takes a list of sentences and returns a list of
     - Input data x (list of tokens)

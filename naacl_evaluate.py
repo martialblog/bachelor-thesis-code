@@ -12,7 +12,7 @@ from keras import backend as kerasbackend
 
 
 # Global configuration
-MAX_SENTENCE_LENGTH = 20
+MAX_SENTENCE_LENGTH = 50
 EMBEDDING_DIM = 300
 KERAS_BATCH_SIZE = 32
 
