@@ -17,7 +17,9 @@ EMBEDDING_DIM = 300
 KERAS_BATCH_SIZE = 32
 
 # Load model and Embeddings
-model = load_model('naacl_metaphor.h5')
+model = load_model('naacl_metaphor.h5',
+                   custom_objects={ 'loss': utils.weighted_categorical_crossentropy([1, 32])})
+# model = load_model('naacl_metaphor.h5')
 embeddings = features.DummyEmbeddings(dimensions=EMBEDDING_DIM)
 
 # Generate test Corpus object and get word embeddings for it

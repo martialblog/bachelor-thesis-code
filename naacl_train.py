@@ -13,7 +13,6 @@ from keras import backend as kerasbackend
 
 
 # Global configuration
-# TODO: Test with longer sentences
 MAX_SENTENCE_LENGTH = 50
 EMBEDDING_DIM = 300
 
@@ -21,6 +20,7 @@ KERAS_OPTIMIZER = 'rmsprop'
 KERAS_METRICS = ['categorical_accuracy']
 KERAS_EPOCHS = 1
 KERAS_BATCH_SIZE = 32
+
 
 print('Loading Word Embeddings')
 # embeddings = features.Word2Vec()
@@ -30,13 +30,8 @@ embeddings = features.DummyEmbeddings(EMBEDDING_DIM)
 # Generate training Corpus object and get word embeddings for it
 c_train = corpus.VUAMC('source/vuamc_corpus_train.csv', 'source/verb_tokens_train_gold_labels.csv')
 c_train.validate_corpus()
+# TODO: Pass MAX_SENT_LEN
 x, y = features.generate_input_and_labels(c_train.sentences, Vectors=embeddings)
-
-
-# Generate test Corpus object and get word embeddings for it
-c_test = corpus.VUAMC('source/vuamc_corpus_test.csv', 'source/verb_tokens_test.csv', mode='test')
-c_test.validate_corpus()
-x_test, y_test = features.generate_input_and_labels(c_test.sentences, Vectors=embeddings)
 
 # Free up some memory
 del embeddings
@@ -64,11 +59,11 @@ print('Shape of Train Labels tensor:', y_train.shape)
 print('Shape of Validation Data tensor:', x_val.shape)
 print('Shape of validation Labels tensor:', y_val.shape)
 
-# TODO: use different loss function
 # Generate loss_weight, since out dataset contains 97% non-metaphor tokens
+# TODO: calculate that shice
 loss_weight = 32
-# KERAS_LOSS = utils.weighted_categorical_crossentropy([1, loss_weight])
-KERAS_LOSS = 'categorical_crossentropy'
+# KERAS_LOSS = 'categorical_crossentropy'
+KERAS_LOSS = utils.weighted_categorical_crossentropy([1, loss_weight])
 print('loss_weight 1 : {}'.format(loss_weight))
 
 
