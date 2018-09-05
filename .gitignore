@@ -17,6 +17,8 @@ predictions.csv
 
 # WordEmbeddings
 *.bin
+*.vec
+*.magnitude
 
 # Keras Models
 *.model

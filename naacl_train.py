@@ -24,7 +24,8 @@ KERAS_BATCH_SIZE = 32
 
 print('Loading Word Embeddings')
 # embeddings = features.Word2Vec()
-embeddings = features.DummyEmbeddings(EMBEDDING_DIM)
+# embeddings = features.DummyEmbeddings(EMBEDDING_DIM)
+embeddings = features.Magnitudes()
 
 
 # Generate training Corpus object and get word embeddings for it

@@ -6,6 +6,7 @@ Module to manage creation of input features and labels
 """
 
 
+import pymagnitude as magnitude
 from gensim.models import KeyedVectors
 from numpy import array as nparray
 from numpy import random, zeros
@@ -85,6 +86,38 @@ class Word2Vec(Embeddings):
                 # TODO: Add option to find most_similar
                 # TODO: I could also save random vectors so they are constant accross corpora
                 return_list.append(random.rand(self.dimensions))
+
+        return return_list
+
+
+class Magnitudes(Embeddings):
+    """
+    Handles the Embeddings using pymagnitude
+    https://github.com/plasticityai/magnitude
+    """
+
+    def __init__(self, filepath='source/wiki-news-300d-1M-subword.magnitude', dimensions=300):
+        """
+        Load the pretrained Embeddings
+        """
+
+        self.dimensions = dimensions
+        self.filepath = filepath
+        self.vectors = magnitude.Magnitude(filepath)
+
+    def embeddings(self, tokens):
+        """
+        Transforms a list of tokens into a list of embeddings
+        """
+
+        return_list = []
+
+        for token_idx, token in enumerate(tokens):
+            if token == Embeddings.padding_marker:
+                return_list.append(zeros(self.dimensions))
+            else:
+                # Magnitude will find most similar
+                return_list.append(self.vectors.query(token))
 
         return return_list
 
