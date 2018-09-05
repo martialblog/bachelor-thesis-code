@@ -2,47 +2,41 @@
 
 
 import corpus
+import evaluate
 import features
-import numpy
 import utils
+# import numpy
 
 from keras.models import load_model
+from keras import backend as kerasbackend
 
 
 # Global configuration
 MAX_SENTENCE_LENGTH = 20
-EMBEDDING_DIM = 50
-
-embeddings = features.DummyEmbeddings(dimensions=EMBEDDING_DIM)
-
-model = load_model('naacl_metaphor.model')
-
-c_test = corpus.VUAMC('source/vuamc_corpus_test.csv', 'source/verb_tokens_test.csv', mode='test')
-c_test.validate_corpus()
-x, y = features.generate_input_and_labels(c_test.sentences, Vectors=embeddings)
-
-
-loss_weight = 32
-KERAS_LOSS = utils.weighted_categorical_crossentropy([1, loss_weight])
-KERAS_OPTIMIZER = 'rmsprop'
-KERAS_METRICS = ['categorical_accuracy']
-KERAS_EPOCHS = 1
+EMBEDDING_DIM = 300
 KERAS_BATCH_SIZE = 32
 
+# Load model and Embeddings
+model = load_model('naacl_metaphor.h5')
+embeddings = features.DummyEmbeddings(dimensions=EMBEDDING_DIM)
 
-predictions = model.predict(x_test, batch_size=KERAS_BATCH_SIZE)
-max_vals = kerasbackend.argmax(predictions)
-label_predictions = kerasbackend.eval(max_vals)
+# Generate test Corpus object and get word embeddings for it
+c_test = corpus.VUAMC('source/vuamc_corpus_test.csv', 'source/verb_tokens_test.csv', mode='test')
+c_test.validate_corpus()
+x_test, y_test = features.generate_input_and_labels(c_test.sentences, Vectors=embeddings)
 
-pred_id = 0
-for txt_id in c_test.tokens:
-    for sentence_id in c_test.tokens[txt_id]:
-        sentence = c_test.sentence(txt_id, sentence_id)
-        tokens = c_test.tokens[txt_id][sentence_id]
-        for tok_id, _ in enumerate(sentence):
-            y_pred = label_predictions[pred_id]
-            if tok_id+1 in tokens:
-                print("{}_{}_{},{},{}".format(txt_id, sentence_id, tok_id+1, y_pred[tok_id % MAX_SENTENCE_LENGTH], sentence[tok_id][0]))
-            if (tok_id+1) % MAX_SENTENCE_LENGTH == 0 and tok_id+1 < len(sentence):
-                pred_id += 1
-        pred_id += 1
+# Generate list of label predictions for each sentence
+float_predictions = model.predict(x_test, batch_size=KERAS_BATCH_SIZE)
+binary_predictions = kerasbackend.argmax(float_predictions)
+label_predictions = kerasbackend.eval(binary_predictions)
+
+
+# Write prediction to CSV file
+predictions_file = 'predictions_foo.csv'
+standard_file = 'source/verb_tokens_test_gold_labels.csv'
+
+rows = evaluate.corpus_evaluation(c_test, label_predictions, MAX_SENTENCE_LENGTH)
+evaluate.csv_evalutation(rows, predictions_file)
+results = evaluate.precision_recall_f1(predictions_file, standard_file)
+
+print(results)

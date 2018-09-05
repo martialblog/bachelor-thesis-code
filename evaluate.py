@@ -8,7 +8,7 @@ from collections import namedtuple
 
 def corpus_evaluation(Corpus, predictions, max_sentence_length):
     """
-
+    Loads the predictions from the model into a printready (csv) list.
     """
 
     rows = []
@@ -56,7 +56,12 @@ def f1(precision, recall):
     """
     Calculates F1 score
     """
-    return 2 * (precision * recall) / (precision + recall)
+    try:
+        res = 2 * (precision * recall) / (precision + recall)
+    except ZeroDivisionError:
+        res = None
+
+    return res
 
 
 def csv_to_dict(filepath):
@@ -101,8 +106,15 @@ def precision_recall_f1(predictions_file, standard_file):
         elif (pred_lbl == 1 and standard[pred_idx] == 0):
             false_neg.append(1)
 
-    precision = sum(true_pos) / (sum(false_pos) + sum(true_pos))
-    recall = sum(true_pos) / (sum(false_pos) + sum(true_pos))
+    try:
+        precision = sum(true_pos) / (sum(false_pos) + sum(true_pos))
+    except ZeroDivisionError:
+        precision = None
+
+    try:
+        recall = sum(true_pos) / (sum(false_pos) + sum(true_pos))
+    except ZeroDivisionError:
+        recall = None
 
     result = Result(precision, recall, f1(precision, recall))
 

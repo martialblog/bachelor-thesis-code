@@ -13,6 +13,7 @@ from keras import backend as kerasbackend
 
 
 # Global configuration
+# TODO: Test with longer sentences
 MAX_SENTENCE_LENGTH = 20
 EMBEDDING_DIM = 300
 
@@ -25,10 +26,12 @@ print('Loading Word Embeddings')
 # embeddings = features.Word2Vec()
 embeddings = features.DummyEmbeddings(EMBEDDING_DIM)
 
+
 # Generate training Corpus object and get word embeddings for it
 c_train = corpus.VUAMC('source/vuamc_corpus_train.csv', 'source/verb_tokens_train_gold_labels.csv')
 c_train.validate_corpus()
 x, y = features.generate_input_and_labels(c_train.sentences, Vectors=embeddings)
+
 
 # Generate test Corpus object and get word embeddings for it
 c_test = corpus.VUAMC('source/vuamc_corpus_test.csv', 'source/verb_tokens_test.csv', mode='test')
@@ -42,6 +45,7 @@ print('Deleted Word Embeddings')
 # Input data and categorical labels
 x_input = x
 y_labels = to_categorical(y, 2)
+
 
 # Generate Training and Validation split
 indices = numpy.arange(x_input.shape[0])
@@ -60,16 +64,20 @@ print('Shape of Train Labels tensor:', y_train.shape)
 print('Shape of Validation Data tensor:', x_val.shape)
 print('Shape of validation Labels tensor:', y_val.shape)
 
+# TODO: use different loss function
 # Generate loss_weight, since out dataset contains 97% non-metaphor tokens
 loss_weight = 32
-KERAS_LOSS = utils.weighted_categorical_crossentropy([1, loss_weight])
+# KERAS_LOSS = utils.weighted_categorical_crossentropy([1, loss_weight])
+KERAS_LOSS = 'categorical_crossentropy'
 print('loss_weight 1 : {}'.format(loss_weight))
+
 
 # Create and compile model
 inputs = Input(shape=(MAX_SENTENCE_LENGTH, EMBEDDING_DIM))
+# TODO: Use different Mask Value for paddings, -1
 model = Masking(mask_value=[0] * EMBEDDING_DIM)(inputs)
 model = Bidirectional(LSTM(100, return_sequences=True, dropout=0, recurrent_dropout=0.25))(model)
-outputs = TimeDistributed(Dense(2, activation="softmax"))(model)
+outputs = TimeDistributed(Dense(2, activation='softmax'))(model)
 model = Model(inputs=inputs, outputs=outputs)
 model.compile(optimizer=KERAS_OPTIMIZER, loss=KERAS_LOSS, metrics=KERAS_METRICS)
 
@@ -79,13 +87,5 @@ scores = model.evaluate(x_val, y_val)
 
 print("%s: %.2f%%" % (model.metrics_names[1], scores[1]*100))
 
-model.save('naacl_metaphor.model')
-
-##############
-# Evaluation #
-##############
-
-# Generate list of label predictions for each sentence
-float_predictions = model.predict(x_test, batch_size=KERAS_BATCH_SIZE)
-binary_predictions = kerasbackend.argmax(float_predictions)
-label_predictions = kerasbackend.eval(binary_predictions)
+model.save('naacl_metaphor.h5')
+print('Saved model to disk')
