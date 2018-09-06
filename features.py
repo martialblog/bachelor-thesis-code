@@ -11,6 +11,7 @@ from gensim.models import KeyedVectors
 from numpy import array as nparray
 from numpy import random, zeros
 from abc import ABC, abstractmethod
+from tqdm import tqdm
 
 
 class Embeddings(ABC):
@@ -176,7 +177,7 @@ def generate_input_and_labels(sentences, Vectors, max_len=50):
     list_of_x = []
     list_of_y = []
 
-    for sentence in sentences:
+    for sentence in tqdm(sentences):
         x, y = compile_input_and_labels_for_sentence(sentence, Vectors, max_len=max_len)
         list_of_x.append(x)
         list_of_y.append(y)
