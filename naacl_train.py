@@ -5,6 +5,7 @@ import corpus
 import features
 import numpy
 import utils
+import collections
 
 from keras.utils import to_categorical
 from keras.layers import TimeDistributed, Bidirectional, LSTM, Input, Masking, Dense
@@ -17,14 +18,13 @@ MAX_SENTENCE_LENGTH = 50
 EMBEDDING_DIM = 300
 
 KERAS_OPTIMIZER = 'rmsprop'
-KERAS_METRICS = ['categorical_accuracy']
+KERAS_METRICS = [utils.f1]
 KERAS_EPOCHS = 1
 KERAS_BATCH_SIZE = 32
 
 
 print('Loading Word Embeddings')
-# embeddings = features.Word2Vec()
-# embeddings = features.DummyEmbeddings(EMBEDDING_DIM)
+#embeddings = features.DummyEmbeddings(EMBEDDING_DIM)
 embeddings = features.Magnitudes()
 
 
@@ -61,12 +61,14 @@ print('Shape of Validation Data tensor:', x_val.shape)
 print('Shape of validation Labels tensor:', y_val.shape)
 
 # Generate loss_weight, since out dataset contains 97% non-metaphor tokens
-# TODO: calculate that shice
-loss_weight = 32
-# KERAS_LOSS = 'categorical_crossentropy'
-KERAS_LOSS = utils.weighted_categorical_crossentropy([1, loss_weight])
-print('loss_weight 1 : {}'.format(loss_weight))
+number_of_all_labels = len(c_train.label_list)
+count_of_label_classes = collections.Counter(c_train.label_list)
 
+percentage_of_non_metaphor_tokens = round(count_of_label_classes[0] / number_of_all_labels * 100)
+percentage_of_metaphor_tokens = round(count_of_label_classes[1] / number_of_all_labels * 100)
+ratio = utils.simplify_ratio(percentage_of_non_metaphor_tokens, percentage_of_metaphor_tokens)
+print('loss_weight {}'.format(ratio))
+KERAS_LOSS = utils.weighted_categorical_crossentropy(ratio)
 
 # Create and compile model
 inputs = Input(shape=(MAX_SENTENCE_LENGTH, EMBEDDING_DIM))
@@ -79,8 +81,8 @@ model.compile(optimizer=KERAS_OPTIMIZER, loss=KERAS_LOSS, metrics=KERAS_METRICS)
 # Fit the model
 model.fit(x_train, y_train, batch_size=KERAS_BATCH_SIZE, epochs=KERAS_EPOCHS)
 scores = model.evaluate(x_val, y_val)
-
-print("%s: %.2f%%" % (model.metrics_names[1], scores[1]*100))
+print('Test score:', scores[0])
+print('Test accuracy:', scores[1]*100)
 
 model.save('naacl_metaphor.h5')
 print('Saved model to disk')

@@ -18,7 +18,10 @@ KERAS_BATCH_SIZE = 32
 
 # Load model and Embeddings
 model = load_model('naacl_metaphor.h5',
-                   custom_objects={ 'loss': utils.weighted_categorical_crossentropy([1, 32])})
+                   custom_objects={
+                       'loss': utils.weighted_categorical_crossentropy([1, 32]),
+                       'f1': utils.f1
+                   })
 # model = load_model('naacl_metaphor.h5')
 embeddings = features.DummyEmbeddings(dimensions=EMBEDDING_DIM)
 
