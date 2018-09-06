@@ -212,8 +212,3 @@ def precision_recall(predictions_file, standard_file):
     recall = sum(true_pos) / (sum(false_pos) + sum(true_pos))
 
     return (precision, recall)
-
-
-def fscore(precision, recall):
-
-    return 2 * (precision * recall) / (precision + recall)

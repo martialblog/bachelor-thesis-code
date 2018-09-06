@@ -57,8 +57,10 @@ def f1(precision, recall):
     Calculates F1 score
     """
     try:
-        res = 2 * (precision * recall) / (precision + recall)
+        res = 2 * ((precision * recall) / (precision + recall))
     except ZeroDivisionError:
+        res = None
+    except TypeError:
         res = None
 
     return res
@@ -101,18 +103,18 @@ def precision_recall_f1(predictions_file, standard_file):
             true_pos.append(1)
         elif (pred_lbl == 0 and standard[pred_idx] == 0):
             true_neg.append(1)
-        elif (pred_lbl == 0 and standard[pred_idx] == 1):
-            false_pos.append(1)
         elif (pred_lbl == 1 and standard[pred_idx] == 0):
+            false_pos.append(1)
+        elif (pred_lbl == 0 and standard[pred_idx] == 1):
             false_neg.append(1)
 
     try:
-        precision = sum(true_pos) / (sum(false_pos) + sum(true_pos))
+        precision = sum(true_pos) / (sum(true_pos) + sum(false_pos))
     except ZeroDivisionError:
         precision = None
 
     try:
-        recall = sum(true_pos) / (sum(false_pos) + sum(true_pos))
+        recall = sum(true_pos) / (sum(true_pos) + sum(false_neg))
     except ZeroDivisionError:
         recall = None
 

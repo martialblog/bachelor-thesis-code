@@ -77,7 +77,7 @@ class Word2Vec(Embeddings):
 
         return_list = []
 
-        for token_idx, token in enumerate(tokens):
+        for token in tokens:
             if token in self.word2vec:
                 return_list.append(self.word2vec[token])
             elif token == Embeddings.padding_marker:
@@ -111,13 +111,15 @@ class Magnitudes(Embeddings):
         """
 
         return_list = []
-
-        for token_idx, token in enumerate(tokens):
+        for token in tokens:
             if token == Embeddings.padding_marker:
                 return_list.append(zeros(self.dimensions))
+            elif token in self.vectors:
+                vec = self.vectors.query(token)
+                return_list.append(vec)
             else:
-                # Magnitude will find most similar
-                return_list.append(self.vectors.query(token))
+                # Magnitude could find most similar, but it takes a while
+                return_list.append(random.rand(self.dimensions))
 
         return return_list
 
