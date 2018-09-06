@@ -11,12 +11,14 @@ from keras.utils import to_categorical
 from keras.layers import TimeDistributed, Bidirectional, LSTM, Input, Masking, Dense
 from keras.models import Model
 from keras import backend as kerasbackend
+from sklearn.model_selection import KFold
 
 
 # Global configuration
 MAX_SENTENCE_LENGTH = 50
 EMBEDDING_DIM = 300
-
+VALIDATION_SPLIT = 0.2
+KFOLD_SPLIT = 5
 KERAS_OPTIMIZER = 'rmsprop'
 KERAS_METRICS = [utils.f1]
 KERAS_EPOCHS = 1
@@ -24,8 +26,8 @@ KERAS_BATCH_SIZE = 32
 
 
 print('Loading Word Embeddings')
-#embeddings = features.DummyEmbeddings(EMBEDDING_DIM)
-embeddings = features.Magnitudes()
+embeddings = features.DummyEmbeddings(EMBEDDING_DIM)
+# embeddings = features.Magnitudes()
 
 
 # Generate training Corpus object and get word embeddings for it
@@ -42,23 +44,6 @@ print('Deleted Word Embeddings')
 x_input = x
 y_labels = to_categorical(y, 2)
 
-
-# Generate Training and Validation split
-indices = numpy.arange(x_input.shape[0])
-numpy.random.shuffle(indices)
-data = x_input[indices]
-labels = y_labels[indices]
-num_validation_samples = int(0.2 * x_input.shape[0])
-
-x_train = data[:-num_validation_samples]
-y_train = labels[:-num_validation_samples]
-x_val = data[-num_validation_samples:]
-y_val = labels[-num_validation_samples:]
-
-print('Shape of Train Data tensor:', x_train.shape)
-print('Shape of Train Labels tensor:', y_train.shape)
-print('Shape of Validation Data tensor:', x_val.shape)
-print('Shape of validation Labels tensor:', y_val.shape)
 
 # Generate loss_weight, since out dataset contains 97% non-metaphor tokens
 number_of_all_labels = len(c_train.label_list)
@@ -78,11 +63,24 @@ outputs = TimeDistributed(Dense(2, activation='softmax'))(model)
 model = Model(inputs=inputs, outputs=outputs)
 model.compile(optimizer=KERAS_OPTIMIZER, loss=KERAS_LOSS, metrics=KERAS_METRICS)
 
-# Fit the model
-model.fit(x_train, y_train, batch_size=KERAS_BATCH_SIZE, epochs=KERAS_EPOCHS)
-scores = model.evaluate(x_val, y_val)
-print('Test score:', scores[0])
-print('Test accuracy:', scores[1]*100)
+
+# Generate Training and Validation split
+kfold = KFold(n_splits=KFOLD_SPLIT, shuffle=True, random_state=1337)
+for train, test in kfold.split(x_input, y_labels):
+    x_train = x_input[train]
+    x_val = x_input[test]
+    y_train = y_labels[train]
+    y_val = y_labels[test]
+
+    # Fit the model for each split
+    model.fit(x_train, y_train,
+              batch_size=KERAS_BATCH_SIZE,
+              epochs=KERAS_EPOCHS,
+              validation_data=(x_val, y_val))
+
+    scores = model.evaluate(x_val, y_val)
+    print('Test score:', scores[0])
+    print('Test accuracy:', scores[1]*100)
 
 model.save('naacl_metaphor.h5')
 print('Saved model to disk')
