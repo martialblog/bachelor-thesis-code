@@ -1,26 +1,35 @@
 #!/usr/bin/env python3
 
 
-import corpus
+"""
+Module for evaluation functions
+"""
+
+
 from csv import writer, reader, QUOTE_MINIMAL
 from collections import namedtuple
 
 
-def corpus_evaluation(Corpus, predictions, max_sentence_length):
+def corpus_evaluation(corpus, predictions, max_sentence_length):
     """
     Loads the predictions from the model into a printready (csv) list.
+
+    :param Corpus corpus: VUAMC Corpus instance
+    :param list predictions: List of predictions from Model
+    :param int max_sentence_length: Maximum sentence length
+    :return: Returns a list of CSV rows (ready to be printed), in the format: a3m-fragment02_45_21,0
     """
 
     rows = []
     pred_idx = 0
 
-    for txt_id in Corpus.tokens:
-        for sentence_id in Corpus.tokens[txt_id]:
-            sentence = Corpus.sentence(txt_id, sentence_id)
-            tokens = Corpus.tokens[txt_id][sentence_id]
+    for txt_id in corpus.tokens:
+        for sentence_id in corpus.tokens[txt_id]:
+            sentence = corpus.sentence(txt_id, sentence_id)
+            tokens = corpus.tokens[txt_id][sentence_id]
 
             # Meh -.-
-            if pred_idx == len(Corpus.sentences):
+            if pred_idx == len(corpus.sentences):
                 break
 
             for tok_idx, _ in enumerate(sentence):
@@ -28,7 +37,7 @@ def corpus_evaluation(Corpus, predictions, max_sentence_length):
 
                 if tok_idx + 1 in tokens:
                     identifier = "{}_{}_{}".format(txt_id, sentence_id, tok_idx + 1)
-                    word = sentence[tok_idx][0]
+                    # word = sentence[tok_idx][0]
                     prediction = labels[tok_idx % max_sentence_length]
                     rows.append([identifier, prediction])
 
@@ -44,6 +53,10 @@ def csv_evalutation(rows, filename='predictions.csv'):
     """
     Writes the preduction of the model into a csv file (similar to the gold_labels file
     provided by NAACL.
+
+    :param list rows: List of printable rows, such as a3m-fragment02_45_21,0
+    :param string filename: Path to file to write rows in
+    :return: None
     """
 
     with open(filename, 'w', newline='') as csvfile:
@@ -52,10 +65,15 @@ def csv_evalutation(rows, filename='predictions.csv'):
             cwriter.writerow(row)
 
 
-def f1(precision, recall):
+def f1score(precision, recall):
     """
     Calculates F1 score
+
+    :param float precision: Precision
+    :param float recall: Recall
+    :return: F1 Score
     """
+
     try:
         res = 2 * ((precision * recall) / (precision + recall))
     except ZeroDivisionError:
@@ -69,7 +87,15 @@ def f1(precision, recall):
 def csv_to_dict(filepath):
     """
     Returns a csv file with key/values as dictionary.
+    Example:
+      a3m-fragment02_45_21,0
+      key:a3m-fragment02_45_21
+      value: 0
+
+    :param string filepath: Path to file to load
+    :return: Dictionary from csv file
     """
+
     ret_dict = {}
 
     with open(filepath, newline='') as csvfile:
@@ -87,9 +113,14 @@ def precision_recall_f1(predictions_file, standard_file):
 
     Example:
     res = precision_recall_f1('predictions.csv', 'source/verb_tokens_test_gold_labels.csv')
+
+    :param string predictions_file: File containing the predictions from the model
+    :param string standard_file: File containing the gold standard from the NAACL
+    :return: Precision, Recall and F1 as a namendtuple
     """
 
-    Result= namedtuple('Result', ['precision', 'recall', 'f1'])
+    # pylint: disable=invalid-name
+    Result = namedtuple('Result', ['precision', 'recall', 'f1'])
     predictions = csv_to_dict(predictions_file)
     standard = csv_to_dict(standard_file)
 
@@ -118,6 +149,6 @@ def precision_recall_f1(predictions_file, standard_file):
     except ZeroDivisionError:
         recall = None
 
-    result = Result(precision, recall, f1(precision, recall))
+    result = Result(precision, recall, f1score(precision, recall))
 
     return result

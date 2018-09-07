@@ -1,0 +1,5 @@
+# pylint config
+[MESSAGES CONTROL]
+disable=too-few-public-methods, line-too-long, no-name-in-module, import-error, fixme, too-many-arguments, too-many-instance-attributes, logging-not-lazy, superfluous-parens
+[MASTER]
+ignore-patterns=^test.*

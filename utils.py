@@ -10,19 +10,20 @@ from os.path import exists
 from shutil import copyfile
 from subprocess import run
 from urllib.request import urlretrieve
+from urllib.error import HTTPError
 from zipfile import ZipFile
 from keras import backend as kerasbackend
 
 
-def simplify_ratio(A, B):
+def simplify_ratio(list_a, list_b):
     """
     Little helper to simplify ratios.
     """
 
-    A_s = round(A / min([A, B]))
-    B_s = round(B / min([A, B]))
+    list_a_s = round(list_a / min([list_a, list_b]))
+    list_b_s = round(list_b / min([list_a, list_b]))
 
-    return_tuple = (min([A_s, B_s]), max([A_s, B_s]))
+    return_tuple = (min([list_a_s, list_b_s]), max([list_a_s, list_b_s]))
 
     return return_tuple
 
@@ -43,7 +44,7 @@ def download_vuamc_xml(url='http://ota.ahds.ac.uk/text/2541.zip'):
         try:
             print('Downloading {url}'.format(url=url))
             urlretrieve(url, zipped_vuamc_file)
-        except urllib.error.HTTPError:
+        except HTTPError:
             print('Could not download VUAMC.zip')
             return
 
@@ -126,6 +127,9 @@ def weighted_categorical_crossentropy(weights):
     weights = kerasbackend.variable(weights)
 
     def loss(y_true, y_pred):
+        """
+        Calculate categorical_crossentropy including the weights
+        """
         # scale predictions so that the class probas of each sample sum to 1
         y_pred /= kerasbackend.sum(y_pred, axis=-1, keepdims=True)
         # clip to prevent NaN's and Inf's
@@ -136,79 +140,3 @@ def weighted_categorical_crossentropy(weights):
         return loss
 
     return loss
-
-
-def corpus_evaluation(Corpus, predictions, max_sentence_length):
-
-    rows = []
-    pred_idx = 0
-
-    for txt_id in Corpus.tokens:
-        for sentence_id in Corpus.tokens[txt_id]:
-            sentence = Corpus.sentence(txt_id, sentence_id)
-            tokens = Corpus.tokens[txt_id][sentence_id]
-
-            # Meh -.-
-            if pred_idx == len(Corpus.sentences):
-                break
-
-            for tok_idx, _ in enumerate(sentence):
-                labels = predictions[pred_idx]
-
-                if tok_idx + 1 in tokens:
-                    identifier = "{}_{}_{}".format(txt_id, sentence_id, tok_idx + 1)
-                    word = sentence[tok_idx][0]
-                    prediction = labels[tok_idx % max_sentence_length]
-                    rows.append([identifier, prediction])
-
-                if (tok_idx + 1) % max_sentence_length == 0 and tok_idx + 1 < len(sentence):
-                    pred_idx += 1
-
-            pred_idx += 1
-
-    return rows
-
-
-def csv_evalutation(rows, filename='predictions.csv'):
-
-    with open(filename, 'w', newline='') as csvfile:
-        cwriter = writer(csvfile, delimiter=',', quotechar='|', quoting=QUOTE_MINIMAL)
-        for row in rows:
-            cwriter.writerow(row)
-
-
-def precision_recall(predictions_file, standard_file):
-
-    predictions = {}
-    standard = {}
-
-    # Remove duplicate code
-    with open(predictions_file, newline='') as csvfile:
-        predreader = reader(csvfile, delimiter=',', quotechar='|')
-        for row in predreader:
-            predictions[row[0]] = int(row[1])
-
-    with open(standard_file, newline='') as csvfile:
-        stdreader = reader(csvfile, delimiter=',', quotechar='|')
-        for row in stdreader:
-            standard[row[0]] = int(row[1])
-
-    true_pos = []
-    true_neg = []
-    false_pos = []
-    false_neg = []
-
-    for pred_idx, pred_lbl in predictions.items():
-        if (pred_lbl == 1 and standard[pred_idx] == 1):
-            true_pos.append(1)
-        elif (pred_lbl == 0 and standard[pred_idx] == 0):
-            true_neg.append(1)
-        elif (pred_lbl == 0 and standard[pred_idx] == 1):
-            false_pos.append(1)
-        elif (pred_lbl == 1 and standard[pred_idx] == 0):
-            false_neg.append(1)
-
-    precision = sum(true_pos) / (sum(true_neg) + sum(true_pos))
-    recall = sum(true_pos) / (sum(false_pos) + sum(true_pos))
-
-    return (precision, recall)

@@ -2,13 +2,12 @@
 
 
 """
-Class to manage VUAMC
+Module to manage the VUAM Corpus
 """
 
 
-from collections import Counter, OrderedDict
+from collections import OrderedDict
 from csv import reader, DictReader
-from numpy import array as nparray
 from itertools import chain
 
 
@@ -26,14 +25,15 @@ class VUAMC():
     a1h-fragment06_116_1,0
     a1h-fragment06_116_2,0
     a1h-fragment06_116_5,1
-
-    :param string vuamc_file: Test/Train VUAMC file as csv
-    :param string tokens_file: Test/Train Tokens file as csv
-    :param string mode: "train" will read labels from tokens_file
-    :return: VUAMC Object
     """
 
     def __init__(self, vuamc_file, tokens_file, mode='train'):
+        """
+        :param string vuamc_file: Test/Train VUAMC file as csv
+        :param string tokens_file: Test/Train Tokens file as csv
+        :param string mode: "train" will read labels from tokens_file
+        :return: VUAMC Object
+        """
 
         self.delimiter = ','
         self.quotechar = '"'
@@ -48,7 +48,7 @@ class VUAMC():
         self.vuamc = self._load_vuamc(self.vuamc_file)
         self.tokens = self._load_tokens(self.tokens_file)
 
-    def _load_vuamc(self, fn):
+    def _load_vuamc(self, filename):
         """
         Loads the VUAMC CSV file into an OrderedDict.
 
@@ -61,7 +61,7 @@ class VUAMC():
 
         data = OrderedDict()
 
-        with open(fn) as csvfile:
+        with open(filename) as csvfile:
             csvreader = DictReader(csvfile, delimiter=self.delimiter, quotechar=self.quotechar)
 
             for row in csvreader:
@@ -93,7 +93,7 @@ class VUAMC():
 
             return data
 
-    def _load_tokens(self, fn):
+    def _load_tokens(self, filename):
         """
         Loads the training gold labels into an OrderedDict.
         These are used to yield the (tokens,labels) for the sentences.
@@ -104,7 +104,7 @@ class VUAMC():
 
         data = OrderedDict()
 
-        with open(fn) as csvfile:
+        with open(filename) as csvfile:
             csvreader = reader(csvfile, delimiter=self.delimiter, quotechar=self.quotechar)
 
             for row in csvreader:
@@ -123,9 +123,7 @@ class VUAMC():
                 if sentence_id not in data[txt_id]:
                     data[txt_id][sentence_id] = OrderedDict()
 
-                if (txt_id in data and
-                    sentence_id in data[txt_id] and
-                    int(token_id) in data[txt_id][sentence_id]):
+                if (txt_id in data and sentence_id in data[txt_id] and int(token_id) in data[txt_id][sentence_id]):
                     exit('Identical keys in line {}'.format(csvreader.line_num))
 
                 data[txt_id][sentence_id][int(token_id)] = label
@@ -135,6 +133,7 @@ class VUAMC():
     def validate_corpus(self):
         """
         Check that the 'txt_id, sentence_id, token_id, class_label'-s from the csv files match.
+        Raises AssertionsError if files don't match.
         """
 
         for txt_id in self.tokens:
@@ -195,7 +194,9 @@ class VUAMC():
         """
 
         def populate_tokens():
-
+            """
+            Turn sentences list into token list
+            """
             for sentence in self.sentences:
                 yield [item[0] for item in sentence]
 
@@ -212,7 +213,9 @@ class VUAMC():
         """
 
         def populate_labels():
-
+            """
+            Turn sentences list into labels list
+            """
             for sentence in self.sentences:
                 yield [item[1] for item in sentence]
 

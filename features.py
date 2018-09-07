@@ -2,21 +2,22 @@
 
 
 """
-Module to manage creation of input features and labels
+Module to manage creation of input features/labels and Embeddings
 """
 
 
-import pymagnitude as magnitude
+from abc import ABC, abstractmethod
 from gensim.models import KeyedVectors
 from numpy import array as nparray
 from numpy import random, zeros
-from abc import ABC, abstractmethod
 from tqdm import tqdm
+import pymagnitude as magnitude
 
 
 class Embeddings(ABC):
     """
     Abstract Base Class for Word Embeddings.
+    This class should implement the polymorph function embeddings() to producs Embeddings from a list of tokens
     """
 
     padding_marker = '__PADDING__'
@@ -24,6 +25,7 @@ class Embeddings(ABC):
     def __init__(self, dimensions):
         """
         :param int dimensions: Dimensions of the Word Embedding Vectors
+        :return: Embeddings Object
         """
 
         self.dimensions = dimensions
@@ -32,23 +34,30 @@ class Embeddings(ABC):
     @abstractmethod
     def embeddings(self, tokens):
         """
-        This method will take a list of tokens and returns a list of Word Embeddings with the same size
+        This method will take a list of tokens and returns a list of Word Embeddings with the same size.
+
+        :param list tokens: List of tokens to transform into Embeddings
         """
 
         raise NotImplementedError
 
 
 class DummyEmbeddings(Embeddings):
+    """
+    Generates random numpy arrays as embeddings for development
+    """
 
     def embeddings(self, tokens):
         """
         This method will take a list of tokens and returns a list of Dummy Word Embeddings with the same size.
-        For development purposes
+
+        :param list tokens: List of tokens to transform into Embeddings
+        :return: List of numpy arrays with given dimensions
         """
 
         return_list = []
 
-        for token_idx, token in enumerate(tokens):
+        for token in tokens:
             if token == Embeddings.padding_marker:
                 return_list.append(zeros(self.dimensions))
             else:
@@ -66,6 +75,9 @@ class Word2Vec(Embeddings):
     def __init__(self, filepath='source/GoogleNews-vectors-negative300.bin', dimensions=300):
         """
         Load the pretrained Word2Vec vectors
+
+        :param string filename: Path to gensim Keyedvectors file as *.bin
+        :param int dimensions: Dimensions of the Vectors (to generate zeros for padding)
         """
 
         self.dimensions = dimensions
@@ -74,6 +86,9 @@ class Word2Vec(Embeddings):
     def embeddings(self, tokens):
         """
         Transforms a list of tokens into a list of embeddings
+
+        :param list tokens: List of tokens to transform into Embeddings
+        :return: List of Word2Vec embeddings for given tokens
         """
 
         return_list = []
@@ -100,6 +115,9 @@ class Magnitudes(Embeddings):
     def __init__(self, filepath='source/wiki-news-300d-1M-subword.magnitude', dimensions=300):
         """
         Load the pretrained Embeddings
+
+        :param string filename: Path to pymagnitude file as *.magnitude
+        :param int dimensions: Dimensions of the Vectors (to generate zeros for padding)
         """
 
         self.dimensions = dimensions
@@ -109,6 +127,9 @@ class Magnitudes(Embeddings):
     def embeddings(self, tokens):
         """
         Transforms a list of tokens into a list of embeddings
+
+        :param list tokens: List of tokens to transform into Embeddings
+        :return: List of embeddings for given tokens
         """
 
         return_list = []
@@ -127,7 +148,8 @@ class Magnitudes(Embeddings):
 
 def add_padding(tokens, max_len=50, pad_value='__PADDING__', split_if_too_long=True):
     """
-    Pad a list of toks with value to maxlen length.
+    Pad a list of tokens with value to max_len length.
+    Uses the given pad_value to produce dummy tokens for padding
 
     :param list tokens: List of tokens to add padding to
     :param int max_len: Maximum length of the new padded list
@@ -136,19 +158,27 @@ def add_padding(tokens, max_len=50, pad_value='__PADDING__', split_if_too_long=T
     :return: List of tokens with padding at the end
     """
 
+    # TODO: Implement split_if_too_long
     if len(tokens) <= max_len:
         # Append value to end of short token list
         return tokens + [pad_value] * (max_len - len(tokens))
     elif len(tokens) >= max_len:
         # Cutoff if sentence is too long
         return tokens[0:max_len]
-    else:
-        return tokens
+
+    return tokens
 
 
 def compile_input_and_labels_for_sentence(sentence, Vectors, max_len=50):
     """
     Adds padding to the sentence tokens and labels
+
+    :param list sentences: List of sentnces to generated labels from
+    :param Embeddings vectors: Embeddings instance to generate embeddings from
+    :param int max_len: Maximum length of sentences
+    :return: Tuple containing:
+    x_inputs as list of Embeddings for a given sentence,
+    y_labels as list of labels for a given sentence
     """
 
     x_inputs = []
@@ -171,7 +201,11 @@ def generate_input_and_labels(sentences, Vectors, max_len=50):
     - Corresponding labels y (list of labels)
 
     :param list sentences: list sentences as list of tuples
+    :param Embeddings vectors: Embeddings instance to generate embeddings from
     :param int max_len: Maximum length of the new padded list
+    :return: Tuple containing:
+    numpy array x, list of lists containing sentences as embeddings
+    numpy array y, list if lists containing labels for sentences in x
     """
 
     list_of_x = []
