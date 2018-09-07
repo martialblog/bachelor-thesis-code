@@ -5,7 +5,6 @@ import corpus
 import evaluate
 import features
 import utils
-# import numpy
 
 from keras.models import load_model
 from keras import backend as kerasbackend

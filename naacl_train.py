@@ -3,10 +3,9 @@
 
 import corpus
 import features
-import numpy
 import utils
-import collections
 
+import collections
 from keras.utils import to_categorical
 from keras.layers import TimeDistributed, Bidirectional, LSTM, Input, Masking, Dense
 from keras.models import Model
@@ -23,11 +22,13 @@ KERAS_OPTIMIZER = 'rmsprop'
 KERAS_METRICS = [utils.f1]
 KERAS_EPOCHS = 1
 KERAS_BATCH_SIZE = 32
-
+KERAS_DROPOUT = 0.25
+KERAS_ACTIVATION = 'softmax'
 
 print('Loading Word Embeddings')
-embeddings = features.DummyEmbeddings(EMBEDDING_DIM)
 # embeddings = features.Magnitudes()
+# embeddings = features.Word2Vec()
+embeddings = features.DummyEmbeddings(EMBEDDING_DIM)
 
 
 # Generate training Corpus object and get word embeddings for it
@@ -58,8 +59,8 @@ KERAS_LOSS = utils.weighted_categorical_crossentropy(ratio)
 # Create and compile model
 inputs = Input(shape=(MAX_SENTENCE_LENGTH, EMBEDDING_DIM))
 model = Masking(mask_value=[-1] * EMBEDDING_DIM)(inputs)
-model = Bidirectional(LSTM(100, return_sequences=True, dropout=0, recurrent_dropout=0.25))(model)
-outputs = TimeDistributed(Dense(2, activation='softmax'))(model)
+model = Bidirectional(LSTM(100, return_sequences=True, dropout=0, recurrent_dropout=KERAS_DROPOUT))(model)
+outputs = TimeDistributed(Dense(2, activation=KERAS_ACTIVATION))(model)
 model = Model(inputs=inputs, outputs=outputs)
 model.compile(optimizer=KERAS_OPTIMIZER, loss=KERAS_LOSS, metrics=KERAS_METRICS)
 
@@ -79,8 +80,9 @@ for train, test in kfold.split(x_input, y_labels):
               validation_data=(x_val, y_val))
 
     scores = model.evaluate(x_val, y_val)
-    print('Test score:', scores[0])
-    print('Test accuracy:', scores[1]*100)
+    print('Test score: {:.2%}'.format(scores[0]))
+    print('Test accuracy: {:.2%}'.format(scores[1]))
+
 
 model.save('naacl_metaphor.h5')
 print('Saved model to disk')
