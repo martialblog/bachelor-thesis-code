@@ -6,7 +6,8 @@ import features
 import utils
 
 import collections
-from keras.utils import to_categorical
+import numpy
+from keras.utils import to_categorical, plot_model
 from keras.layers import TimeDistributed, Bidirectional, LSTM, Input, Masking, Dense
 from keras.models import Model
 from keras import backend as kerasbackend
@@ -45,6 +46,10 @@ print('Deleted Word Embeddings')
 x_input = x
 y_labels = to_categorical(y, 2)
 
+# Average sentence length ()
+mean_sentence_len = numpy.mean([len(sent) for sent in c_train.sentences]) # 20.020576654388417
+variance_sentence_len = numpy.var([len(sent) for sent in c_train.sentences]) # 192.96947371802224
+stdeviation_sentence_len = numpy.std([len(sent) for sent in c_train.sentences]) # 13.891345281074193
 
 # Generate loss_weight, since out dataset contains 97% non-metaphor tokens
 number_of_all_labels = len(c_train.label_list)
@@ -57,13 +62,16 @@ print('loss_weight {}'.format(ratio))
 KERAS_LOSS = utils.weighted_categorical_crossentropy(ratio)
 
 # Create and compile model
-inputs = Input(shape=(MAX_SENTENCE_LENGTH, EMBEDDING_DIM))
-model = Masking(mask_value=[-1] * EMBEDDING_DIM)(inputs)
-model = Bidirectional(LSTM(100, return_sequences=True, dropout=0, recurrent_dropout=KERAS_DROPOUT))(model)
-outputs = TimeDistributed(Dense(2, activation=KERAS_ACTIVATION))(model)
+inputs = Input(shape=(MAX_SENTENCE_LENGTH, EMBEDDING_DIM), name='sentence_input')
+model = Masking(mask_value=[-1] * EMBEDDING_DIM, name='masking_padding')(inputs)
+model = Bidirectional(LSTM(100, return_sequences=True, dropout=0, recurrent_dropout=KERAS_DROPOUT), name='hidden_lstm')(model)
+outputs = TimeDistributed(Dense(2, activation=KERAS_ACTIVATION), name='labels_output')(model)
 model = Model(inputs=inputs, outputs=outputs)
+
 model.compile(optimizer=KERAS_OPTIMIZER, loss=KERAS_LOSS, metrics=KERAS_METRICS)
 
+# Requires pydot and graphviz to be installed
+plot_model(model, to_file='naacl_metaphor_model.png', show_shapes=True)
 
 # Generate Training and Validation split
 kfold = KFold(n_splits=KFOLD_SPLIT, shuffle=True, random_state=1337)
@@ -82,7 +90,6 @@ for train, test in kfold.split(x_input, y_labels):
     scores = model.evaluate(x_val, y_val)
     print('Test score: {:.2%}'.format(scores[0]))
     print('Test accuracy: {:.2%}'.format(scores[1]))
-
 
 model.save('naacl_metaphor.h5')
 print('Saved model to disk')
