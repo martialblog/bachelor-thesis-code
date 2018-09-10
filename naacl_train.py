@@ -18,6 +18,7 @@ from sklearn.model_selection import KFold
 MAX_SENTENCE_LENGTH = 50
 EMBEDDING_DIM = 300
 VALIDATION_SPLIT = 0.2
+WEIGHT_SMOOTHING = 0.1
 KFOLD_SPLIT = 5
 KERAS_OPTIMIZER = 'rmsprop'
 KERAS_METRICS = [utils.f1]
@@ -55,11 +56,9 @@ stdeviation_sentence_len = numpy.std([len(sent) for sent in c_train.sentences]) 
 number_of_all_labels = len(c_train.label_list)
 count_of_label_classes = collections.Counter(c_train.label_list)
 
-percentage_of_non_metaphor_tokens = round(count_of_label_classes[0] / number_of_all_labels * 100)
-percentage_of_metaphor_tokens = round(count_of_label_classes[1] / number_of_all_labels * 100)
-ratio = utils.simplify_ratio(percentage_of_non_metaphor_tokens, percentage_of_metaphor_tokens)
-print('loss_weight {}'.format(ratio))
-KERAS_LOSS = utils.weighted_categorical_crossentropy(ratio)
+class_weights =  list(utils.get_class_weights(c_train.label_list, WEIGHT_SMOOTHING).values())
+print('loss_weight {}'.format(class_weights))
+KERAS_LOSS = utils.weighted_categorical_crossentropy(class_weights)
 
 # Create and compile model
 inputs = Input(shape=(MAX_SENTENCE_LENGTH, EMBEDDING_DIM), name='sentence_input')

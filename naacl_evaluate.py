@@ -14,20 +14,23 @@ from keras import backend as kerasbackend
 MAX_SENTENCE_LENGTH = 50
 EMBEDDING_DIM = 300
 KERAS_BATCH_SIZE = 32
+WEIGHT_SMOOTHING = 0.1
 
-# Load model and Embeddings
-model = load_model('naacl_metaphor.h5',
-                   custom_objects={
-                       'loss': utils.weighted_categorical_crossentropy([1, 32]),
-                       'f1': utils.f1
-                   })
-# model = load_model('naacl_metaphor.h5')
 embeddings = features.DummyEmbeddings(dimensions=EMBEDDING_DIM)
 
 # Generate test Corpus object and get word embeddings for it
 c_test = corpus.VUAMC('source/vuamc_corpus_test.csv', 'source/verb_tokens_test.csv', mode='test')
 c_test.validate_corpus()
 x_test, y_test = features.generate_input_and_labels(c_test.sentences, Vectors=embeddings)
+
+class_weights =  list(utils.get_class_weights(c_test.label_list, WEIGHT_SMOOTHING).values())
+
+# Load model and Embeddings
+model = load_model('naacl_metaphor.h5',
+                   custom_objects={
+                       'loss': utils.weighted_categorical_crossentropy(class_weights),
+                       'f1': utils.f1
+                   })
 
 # Generate list of label predictions for each sentence
 float_predictions = model.predict(x_test, batch_size=KERAS_BATCH_SIZE)
