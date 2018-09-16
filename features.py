@@ -214,7 +214,7 @@ def compile_input_and_labels_for_sentence(sentence, Vectors, max_len=50):
 
     # Unpack tuples and pad the sequence to a fixed length
     padded_sentence_tokens = add_padding([token[0] for token in sentence], max_len=max_len)
-    padded_sentence_labels = add_padding([token[1] for token in sentence], pad_value=-1, max_len=max_len)
+    padded_sentence_labels = add_padding([label[1] for label in sentence], pad_value=-1, max_len=max_len)
 
     x_inputs = Vectors.embeddings(padded_sentence_tokens)
     y_labels = padded_sentence_labels
