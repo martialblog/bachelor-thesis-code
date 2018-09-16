@@ -27,7 +27,7 @@ class VUAMC():
     a1h-fragment06_116_5,1
     """
 
-    def __init__(self, vuamc_file, tokens_file, mode='train'):
+    def __init__(self, vuamc_file, tokens_file, tags_file, mode='train'):
         """
         :param string vuamc_file: Test/Train VUAMC file as csv
         :param string tokens_file: Test/Train Tokens file as csv
@@ -41,12 +41,41 @@ class VUAMC():
         self._sentences = None
         self._token_list = None
         self._label_list = None
+        self._pos_list = None
 
         self.vuamc_file = vuamc_file
         self.tokens_file = tokens_file
+        self.tags_file = tags_file
 
+        self.tags = self._load_tags(self.tags_file)
         self.vuamc = self._load_vuamc(self.vuamc_file)
         self.tokens = self._load_tokens(self.tokens_file)
+
+    def _load_tags(self, filename):
+        """
+        Loads the POS Tag CSV file.
+        """
+        data = OrderedDict()
+
+        with open(filename) as csvfile:
+            csvreader = DictReader(csvfile, delimiter=self.delimiter, quotechar=self.quotechar)
+
+            for row in csvreader:
+                txt_id = row['txt_id']
+                sentence_id = row['sentence_id']
+                tags = row['sentence_txt'].split(' ')
+
+                if txt_id not in data:
+                    data[txt_id] = {}
+
+                if txt_id in data and sentence_id in data[txt_id]:
+                    exit('Identical keys in line {}'.format(csvreader.line_num))
+                else:
+                    data[txt_id][sentence_id] = {}
+
+                data[txt_id][sentence_id]['tags'] = tags
+
+        return data
 
     def _load_vuamc(self, filename):
         """
@@ -88,8 +117,10 @@ class VUAMC():
                         labels[token_id+1] = 0
                     tokens[token_id+1] = token
 
+
                 data[txt_id][sentence_id]['tokens'] = tokens
                 data[txt_id][sentence_id]['labels'] = labels
+                data[txt_id][sentence_id]['tags'] = self.tags[txt_id][sentence_id]['tags']
 
             return data
 
@@ -160,7 +191,12 @@ class VUAMC():
                 # Token not a metaphor
                 label = 0
 
-            sentence.append((self.vuamc[text_id][sentence_id]['tokens'][token_id], label))
+            try:
+                tag = self.vuamc[text_id][sentence_id]['tags'][token_id]
+            except IndexError:
+                tag = 'X'
+
+            sentence.append((self.vuamc[text_id][sentence_id]['tokens'][token_id], label, tag))
 
         return sentence
 
@@ -224,3 +260,22 @@ class VUAMC():
             self._label_list = list(chain(*list(populate_labels())))
 
         return self._label_list
+
+    @property
+    def pos_list(self):
+        """
+        Yields a list of all pos tags
+        """
+
+        def populate_pos():
+            """
+            Turn sentences list into labels list
+            """
+            for sentence in self.sentences:
+                yield [item[2] for item in sentence]
+
+        if self._pos_list is None:
+            # Flatten list of lists
+            self._pos_list = list(chain(*list(populate_pos())))
+
+        return self._pos_list
