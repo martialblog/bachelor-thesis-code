@@ -14,7 +14,7 @@ from keras import backend as kerasbackend
 MAX_SENTENCE_LENGTH = 50
 EMBEDDING_DIM = 300
 KERAS_BATCH_SIZE = 32
-WEIGHT_SMOOTHING = 0.1
+WEIGHT_SMOOTHING = 0.0
 
 embeddings = features.DummyEmbeddings(dimensions=EMBEDDING_DIM)
 
@@ -23,13 +23,17 @@ c_test = corpus.VUAMC('source/vuamc_corpus_test.csv', 'source/verb_tokens_test.c
 c_test.validate_corpus()
 x_test, y_test = features.generate_input_and_labels(c_test.sentences, Vectors=embeddings)
 
+# TODO: Needs to come from the train I assume
 class_weights =  list(utils.get_class_weights(c_test.label_list, WEIGHT_SMOOTHING).values())
+print('loss_weight {}'.format(class_weights))
 
 # Load model and Embeddings
 model = load_model('naacl_metaphor.h5',
                    custom_objects={
                        'loss': utils.weighted_categorical_crossentropy(class_weights),
-                       'f1': utils.f1
+                       'f1': utils.f1,
+                       'precision': utils.precision,
+                       'recall': utils.recall
                    })
 
 # Generate list of label predictions for each sentence

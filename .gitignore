@@ -14,6 +14,7 @@ starterkits/2541/*
 
 # Output
 predictions.csv
+naacl_metaphor_model.png
 
 # WordEmbeddings
 *.bin

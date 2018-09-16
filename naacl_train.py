@@ -18,10 +18,10 @@ from sklearn.model_selection import KFold
 MAX_SENTENCE_LENGTH = 50
 EMBEDDING_DIM = 300
 VALIDATION_SPLIT = 0.2
-WEIGHT_SMOOTHING = 0.1
-KFOLD_SPLIT = 5
+WEIGHT_SMOOTHING = 0.0
+KFOLD_SPLIT = 2
 KERAS_OPTIMIZER = 'rmsprop'
-KERAS_METRICS = [utils.f1]
+KERAS_METRICS = [utils.precision, utils.recall]
 KERAS_EPOCHS = 1
 KERAS_BATCH_SIZE = 32
 KERAS_DROPOUT = 0.25
@@ -36,8 +36,8 @@ embeddings = features.DummyEmbeddings(EMBEDDING_DIM)
 # Generate training Corpus object and get word embeddings for it
 c_train = corpus.VUAMC('source/vuamc_corpus_train.csv', 'source/verb_tokens_train_gold_labels.csv')
 c_train.validate_corpus()
-# TODO: Pass MAX_SENT_LEN
-x, y = features.generate_input_and_labels(c_train.sentences, Vectors=embeddings)
+
+x, y = features.generate_input_and_labels(c_train.sentences, Vectors=embeddings, max_len=MAX_SENTENCE_LENGTH)
 
 # Free up some memory
 del embeddings
@@ -87,8 +87,9 @@ for train, test in kfold.split(x_input, y_labels):
               validation_data=(x_val, y_val))
 
     scores = model.evaluate(x_val, y_val)
-    print('Test score: {:.2%}'.format(scores[0]))
-    print('Test accuracy: {:.2%}'.format(scores[1]))
+    print('Loss: {:.2%}'.format(scores[0]))
+    print('Precision: {:.2%}'.format(scores[1]))
+    print('Recall: {:.2%}'.format(scores[2]))
 
 model.save('naacl_metaphor.h5')
 print('Saved model to disk')
