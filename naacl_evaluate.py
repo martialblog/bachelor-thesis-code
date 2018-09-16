@@ -19,9 +19,11 @@ WEIGHT_SMOOTHING = 0.0
 embeddings = features.DummyEmbeddings(dimensions=EMBEDDING_DIM)
 
 # Generate test Corpus object and get word embeddings for it
-c_test = corpus.VUAMC('source/vuamc_corpus_test.csv', 'source/verb_tokens_test.csv', mode='test')
+c_test = corpus.VUAMC('source/vuamc_corpus_test.csv', 'source/verb_tokens_test.csv', 'source/vuamc_corpus_test_pos.csv', mode='test')
 c_test.validate_corpus()
-x_test, y_test = features.generate_input_and_labels(c_test.sentences, Vectors=embeddings)
+
+# Sentences, Labels, POS Tags - I could just use better variable names
+x_test, y_test, z_pos = features.generate_input_and_labels(c_test.sentences, Vectors=embeddings)
 
 # TODO: Needs to come from the train I assume
 class_weights =  list(utils.get_class_weights(c_test.label_list, WEIGHT_SMOOTHING).values())

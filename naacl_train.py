@@ -12,6 +12,7 @@ from keras.layers import TimeDistributed, Bidirectional, LSTM, Input, Masking, D
 from keras.models import Model
 from keras import backend as kerasbackend
 from sklearn.model_selection import KFold
+from keras.preprocessing.text import Tokenizer
 
 
 # Global configuration
@@ -34,18 +35,25 @@ embeddings = features.DummyEmbeddings(EMBEDDING_DIM)
 
 
 # Generate training Corpus object and get word embeddings for it
-c_train = corpus.VUAMC('source/vuamc_corpus_train.csv', 'source/verb_tokens_train_gold_labels.csv')
+c_train = corpus.VUAMC('source/vuamc_corpus_train.csv', 'source/verb_tokens_train_gold_labels.csv', 'source/vuamc_corpus_train_pos.csv')
 c_train.validate_corpus()
 
-x, y = features.generate_input_and_labels(c_train.sentences, Vectors=embeddings, max_len=MAX_SENTENCE_LENGTH)
+# Sentences, Labels, POS Tags - I could just use better variable names
+x, y, z = features.generate_input_and_labels(c_train.sentences, Vectors=embeddings, max_len=MAX_SENTENCE_LENGTH)
 
 # Free up some memory
 del embeddings
 print('Deleted Word Embeddings')
 
+# POS Tags to numerical sequences
+pos_tokenizer = Tokenizer()
+pos_tokenizer.fit_on_texts(z)
+pos_sequences = pos_tokenizer.texts_to_sequences(z)
+
 # Input data and categorical labels
 x_input = x
 y_labels = to_categorical(y, 2)
+z_pos = to_categorical(pos_sequences)
 
 # Average sentence length ()
 mean_sentence_len = numpy.mean([len(sent) for sent in c_train.sentences]) # 20.020576654388417
@@ -61,11 +69,12 @@ print('loss_weight {}'.format(class_weights))
 KERAS_LOSS = utils.weighted_categorical_crossentropy(class_weights)
 
 # Create and compile model
-inputs = Input(shape=(MAX_SENTENCE_LENGTH, EMBEDDING_DIM), name='sentence_input')
-model = Masking(mask_value=[-1] * EMBEDDING_DIM, name='masking_padding')(inputs)
+postags = Input(shape=(MAX_SENTENCE_LENGTH, 17), name='postags_input')
+sentences = Input(shape=(MAX_SENTENCE_LENGTH, EMBEDDING_DIM), name='sentence_input')
+model = Masking(mask_value=[-1] * EMBEDDING_DIM, name='masking_padding')(sentences)
 model = Bidirectional(LSTM(100, return_sequences=True, dropout=0, recurrent_dropout=KERAS_DROPOUT), name='hidden_lstm')(model)
 outputs = TimeDistributed(Dense(2, activation=KERAS_ACTIVATION), name='labels_output')(model)
-model = Model(inputs=inputs, outputs=outputs)
+model = Model(inputs=[sentences, postags], outputs=outputs)
 
 model.compile(optimizer=KERAS_OPTIMIZER, loss=KERAS_LOSS, metrics=KERAS_METRICS)
 
@@ -79,14 +88,16 @@ for train, test in kfold.split(x_input, y_labels):
     x_val = x_input[test]
     y_train = y_labels[train]
     y_val = y_labels[test]
+    pos_val = z_pos[test]
+    pos_train = z_pos[train]
 
     # Fit the model for each split
-    model.fit(x_train, y_train,
+    model.fit([x_train, pos_train], y_train,
               batch_size=KERAS_BATCH_SIZE,
               epochs=KERAS_EPOCHS,
-              validation_data=(x_val, y_val))
+              validation_data=([x_val, pos_val], y_val))
 
-    scores = model.evaluate(x_val, y_val)
+    scores = model.evaluate([x_val, pos_val], y_val)
     print('Loss: {:.2%}'.format(scores[0]))
     print('Precision: {:.2%}'.format(scores[1]))
     print('Recall: {:.2%}'.format(scores[2]))

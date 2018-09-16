@@ -162,3 +162,27 @@ def weighted_categorical_crossentropy(weights):
         return loss
 
     return loss
+
+
+from csv import reader, DictReader, writer
+import spacy
+
+def create_postags(filename, outputfile):
+
+    nlp = spacy.load('en_core_web_sm')
+    output = []
+
+    with open(filename) as csvfile:
+        csvreader = DictReader(csvfile, delimiter=',', quotechar='"')
+
+        for row in csvreader:
+            txt_id = row['txt_id']
+            sentence_id = row['sentence_id']
+            sentence_tags = ' '.join([token.pos_ for token in nlp(row['sentence_txt'])])
+
+            output.append([txt_id, sentence_id, sentence_tags])
+
+    with open(outputfile, 'w', newline='') as csvfile:
+        csvwriter = writer(csvfile,  delimiter=',', quotechar='"')
+        for row in output:
+            csvwriter.writerow(row)
