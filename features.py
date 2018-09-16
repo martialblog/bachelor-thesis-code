@@ -174,7 +174,7 @@ def slice_it(list_of_lists, max_len=50):
     return slices
 
 
-def add_padding(tokens, max_len=50, pad_value='__PADDING__', split_if_too_long=True):
+def add_padding(tokens, max_len=50, pad_value='__PADDING__'):
     """
     Pad a list of tokens with value to max_len length.
     Uses the given pad_value to produce dummy tokens for padding
@@ -186,7 +186,6 @@ def add_padding(tokens, max_len=50, pad_value='__PADDING__', split_if_too_long=T
     :return: List of tokens with padding at the end
     """
 
-    # TODO: Implement split_if_too_long
     if len(tokens) <= max_len:
         # Append value to end of short token list
         return tokens + [pad_value] * (max_len - len(tokens))
@@ -211,15 +210,18 @@ def compile_input_and_labels_for_sentence(sentence, Vectors, max_len=50):
 
     x_inputs = []
     y_labels = []
+    z_pos = []
 
     # Unpack tuples and pad the sequence to a fixed length
     padded_sentence_tokens = add_padding([token[0] for token in sentence], max_len=max_len)
     padded_sentence_labels = add_padding([label[1] for label in sentence], pad_value=-1, max_len=max_len)
+    padded_sentence_postag = add_padding([pos[2] for pos in sentence], pad_value='PAD', max_len=max_len)
 
     x_inputs = Vectors.embeddings(padded_sentence_tokens)
     y_labels = padded_sentence_labels
+    z_pos = padded_sentence_postag
 
-    return x_inputs, y_labels
+    return x_inputs, y_labels, z_pos
 
 
 def generate_input_and_labels(sentences, Vectors, max_len=50):
@@ -238,13 +240,15 @@ def generate_input_and_labels(sentences, Vectors, max_len=50):
 
     list_of_x = []
     list_of_y = []
+    list_of_z = []
 
     # Breakup sentences into smaller chunks
     sliced_sentences = slice_it(sentences, max_len)
 
     for sentence in tqdm(sliced_sentences):
-        x, y = compile_input_and_labels_for_sentence(sentence, Vectors, max_len=max_len)
+        x, y, z = compile_input_and_labels_for_sentence(sentence, Vectors, max_len=max_len)
         list_of_x.append(x)
         list_of_y.append(y)
+        list_of_z.append(z)
 
-    return nparray(list_of_x), nparray(list_of_y)
+    return nparray(list_of_x), nparray(list_of_y), list_of_z
