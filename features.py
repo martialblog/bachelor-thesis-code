@@ -146,6 +146,34 @@ class Magnitudes(Embeddings):
         return return_list
 
 
+def chunks(lst, max_len):
+    """
+    Break a list into chunks of size max_len.
+
+    :param list lst: List of elements
+    :param int max_len: Maximum length of the chunks
+    :return: Generator yielding lists of size max_len from original list
+    """
+
+    for idx in range(0, len(lst), max_len):
+        yield lst[idx:idx + max_len]
+
+
+def slice_it(list_of_lists, max_len=50):
+    """
+    Slices a list if lists into elements the size max_len
+
+    :param list list_of_lists: List of lists
+    :param int max_len: Maximum length of the list elements
+    :return: List of lists, with elements of max_len size
+    """
+
+    slices = []
+    for elem in list_of_lists:
+        [slices.append(chunk) for chunk in chunks(elem, max_len)]
+    return slices
+
+
 def add_padding(tokens, max_len=50, pad_value='__PADDING__', split_if_too_long=True):
     """
     Pad a list of tokens with value to max_len length.
@@ -211,7 +239,10 @@ def generate_input_and_labels(sentences, Vectors, max_len=50):
     list_of_x = []
     list_of_y = []
 
-    for sentence in tqdm(sentences):
+    # Breakup sentences into smaller chunks
+    sliced_sentences = slice_it(sentences, max_len)
+
+    for sentence in tqdm(sliced_sentences):
         x, y = compile_input_and_labels_for_sentence(sentence, Vectors, max_len=max_len)
         list_of_x.append(x)
         list_of_y.append(y)

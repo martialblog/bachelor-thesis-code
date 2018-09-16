@@ -13,6 +13,7 @@ from urllib.request import urlretrieve
 from urllib.error import HTTPError
 from zipfile import ZipFile
 from keras import backend as kerasbackend
+from collections import Counter
 
 
 def simplify_ratio(list_a, list_b):
