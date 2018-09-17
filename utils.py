@@ -106,10 +106,10 @@ def f1(y_true, y_pred):
     https://github.com/keras-team/keras/issues/6507
     """
 
-    precision = precision(y_true, y_pred)
-    recall = recall(y_true, y_pred)
+    prec = precision(y_true, y_pred)
+    reca = recall(y_true, y_pred)
 
-    return 2 * ((precision * recall) / (precision + recall))
+    return 2 * ((prec * reca) / (prec + reca))
 
 
 def get_class_weights(y, smooth_factor=0):

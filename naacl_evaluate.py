@@ -8,6 +8,8 @@ import utils
 
 from keras.models import load_model
 from keras import backend as kerasbackend
+from keras.preprocessing.text import Tokenizer
+from keras.utils import to_categorical
 
 
 # Global configuration
@@ -24,6 +26,12 @@ c_test.validate_corpus()
 
 # Sentences, Labels, POS Tags - I could just use better variable names
 x_test, y_test, z_pos = features.generate_input_and_labels(c_test.sentences, Vectors=embeddings)
+
+# POS Tags to numerical sequences
+pos_tokenizer = Tokenizer()
+pos_tokenizer.fit_on_texts(z_pos)
+pos_sequences = pos_tokenizer.texts_to_sequences(z_pos)
+z_test = to_categorical(pos_sequences)
 
 # TODO: Needs to come from the train I assume
 class_weights =  list(utils.get_class_weights(c_test.label_list, WEIGHT_SMOOTHING).values())
