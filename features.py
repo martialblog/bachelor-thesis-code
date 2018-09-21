@@ -140,8 +140,8 @@ class Magnitudes(Embeddings):
                 vec = self.vectors.query(token)
                 return_list.append(vec)
             else:
-                # Magnitude could find most similar, but it takes a while
-                return_list.append(random.rand(self.dimensions))
+                vec = self.vectors.query(token)
+                return_list.append(vec)
 
         return return_list
 
