@@ -18,6 +18,9 @@ EMBEDDING_DIM = 300
 KERAS_BATCH_SIZE = 32
 WEIGHT_SMOOTHING = 0.0
 
+print('Loading Word Embeddings')
+# embeddings = features.Magnitudes()
+# embeddings = features.Word2Vec()
 embeddings = features.DummyEmbeddings(dimensions=EMBEDDING_DIM)
 
 # Generate test Corpus object and get word embeddings for it
@@ -51,11 +54,11 @@ float_predictions = model.predict(x_test, batch_size=KERAS_BATCH_SIZE)
 binary_predictions = kerasbackend.argmax(float_predictions)
 label_predictions = kerasbackend.eval(binary_predictions)
 
-
 # Write prediction to CSV file
 predictions_file = 'predictions.csv'
 standard_file = 'source/verb_tokens_test_gold_labels.csv'
 
+# Evaluate and print result
 rows = evaluate.corpus_evaluation(c_test, label_predictions, MAX_SENTENCE_LENGTH)
 evaluate.csv_evalutation(rows, predictions_file)
 results = evaluate.precision_recall_f1(predictions_file, standard_file)

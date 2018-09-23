@@ -59,8 +59,10 @@ class DummyEmbeddings(Embeddings):
 
         for token in tokens:
             if token == Embeddings.padding_marker:
+                # Add zero vector for padding
                 return_list.append(zeros(self.dimensions))
             else:
+                # Add random vector
                 return_list.append(random.rand(self.dimensions))
 
         return return_list
@@ -97,10 +99,10 @@ class Word2Vec(Embeddings):
             if token in self.word2vec:
                 return_list.append(self.word2vec[token])
             elif token == Embeddings.padding_marker:
+                # Add zero vector for padding
                 return_list.append(zeros(self.dimensions))
             else:
-                # TODO: Add option to find most_similar
-                # TODO: I could also save random vectors so they are constant accross corpora
+                # Add a random vector
                 return_list.append(random.rand(self.dimensions))
 
         return return_list
@@ -140,6 +142,7 @@ class Magnitudes(Embeddings):
                 vec = self.vectors.query(token)
                 return_list.append(vec)
             else:
+                # pymagnitude finds the most similar
                 vec = self.vectors.query(token)
                 return_list.append(vec)
 

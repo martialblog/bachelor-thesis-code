@@ -142,7 +142,6 @@ class VUAMC():
                 txt_id, sentence_id, token_id = row[0].split('_')
 
                 if self.mode == 'train':
-                    # TODO: I dont get this?
                     label = int(row[1])
                     label = self.vuamc[txt_id][sentence_id]['labels'][int(token_id)]
                 else:

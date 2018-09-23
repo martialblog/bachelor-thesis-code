@@ -129,6 +129,7 @@ def precision_recall_f1(predictions_file, standard_file):
     false_pos = []
     false_neg = []
 
+    # Get true/false positives/negatives
     for pred_idx, pred_lbl in predictions.items():
         if (pred_lbl == 1 and standard[pred_idx] == 1):
             true_pos.append(1)
