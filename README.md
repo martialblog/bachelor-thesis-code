@@ -1,4 +1,4 @@
-# A Neural Network Based Approach to Token-Level Metaphor Detection
+# A Neural-Network-Based Approach to Token-Level Metaphor Detection
 
 This repository contains the source code for my bachelor thesis on metaphor detection using Neural Networks. It is based on the [NAACL 2018 Shared Task for Metaphor Detection](https://sites.google.com/site/figlangworkshop/shared-task) but did not compete in the task.
 
