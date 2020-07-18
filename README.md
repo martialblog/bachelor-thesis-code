@@ -9,7 +9,7 @@ Contents:
  - Utils and Helper modules for data preprocessing
  - Conversion and download tools for the VUAMC (training data)
 
-For further details on the Shared Task and the training data, visit: https://github.com/EducationalTestingService/metaphor/tree/master/NAACL-FLP-shared-task
+For further details on the Shared Task and the training data, visit: https://github.com/EducationalTestingService/metaphor
 
 ## Prerequisites
 
