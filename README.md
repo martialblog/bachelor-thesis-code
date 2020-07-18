@@ -11,6 +11,8 @@ Contents:
 
 For further details on the Shared Task and the training data, visit: https://github.com/EducationalTestingService/metaphor
 
+*Hint:* the original data might not be available, but you (hopefully) can find a version here: https://web.archive.org/web/2019*/http://ota.ahds.ac.uk/headers/2541.xml
+
 ## Prerequisites
 
 The following prerequisites could not be included in the repository and need to be downloaded.
