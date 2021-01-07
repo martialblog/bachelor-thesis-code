@@ -1,5 +1,5 @@
 jupyter==1.0.0
-lxml==4.2.4
+lxml==4.6.2
 numpy==1.15.1
 Keras==2.2.2
 tensorflow==1.15.4
